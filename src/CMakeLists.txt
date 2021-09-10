@@ -63,36 +63,12 @@ if ( NOT DEFINED WITH_UTILITIES )
   SET(WITH_UTILITIES ON)
 ENDIF()
 
-IF (WIN32 AND WITH_DAEMON)
-  MESSAGE(WARNING "Skipping alprd daemon installation, as it is not supported in Windows.")
-  SET(WITH_DAEMON OFF)
-ENDIF()
-
-IF (WIN32 AND WITH_TESTS)
-  MESSAGE(WARNING "Skipping unit tests, as it is not supported in Windows.")
-  SET(WITH_TESTS OFF)
-ENDIF()
-
 
 include_directories(./openalpr )
 
-IF (WIN32)
-	add_definitions( -DWINDOWS)
-	add_definitions( -DNOMINMAX)
-
-	# Extra linker dependencies for Windows
-	SET (Tesseract_LIBRARIES
-		${Tesseract_LIBRARIES}
-		ws2_32.lib
-	)
-ELSE()
-
-	SET (Extra_LIBS
-		pthread
-	)
-
-ENDIF()
-
+SET (Extra_LIBS
+    pthread
+)
 
 set(CMAKE_CSS_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall ")
 if (NOT IOS)
@@ -119,9 +95,8 @@ if (NOT IOS)
     ${STATE_DETECTION_LIB}
     support
     video
-    ${OpenCV_LIBS}
-    ${Tesseract_LIBRARIES}
     ${Extra_LIBS}
+    ${CONAN_LIBS}
   )
 ENDIF()
 
@@ -137,14 +112,15 @@ IF (WITH_DAEMON)
 
   TARGET_LINK_LIBRARIES(alprd
       ${OPENALPR_LIB}
-	  support
-      video
-	  curl
-	  ${OpenCV_LIBS}
-	  ${Tesseract_LIBRARIES}
-	  ${log4cplus_LIBRARIES}
-      ${Extra_LIBS}
-    )
+    support
+     video
+    curl
+    ${OpenCV_LIBS}
+    ${Tesseract_LIBRARIES}
+    ${log4cplus_LIBRARIES}
+    ${Extra_LIBS}
+    ${CONAN_LIBS}
+)
 
 ENDIF()
 
