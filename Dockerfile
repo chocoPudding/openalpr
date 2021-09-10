@@ -11,7 +11,12 @@ run apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     liblog4cplus-dev \
     libopencv-dev \
     libtesseract-dev \
-    wget
+    wget \
+    python3.7 \
+    python3-pip \
+    libgtk2.0-dev
+
+run python3.7 -m pip install conan
 
 # Copy all data
 copy . /srv/openalpr
@@ -21,6 +26,7 @@ run mkdir /srv/openalpr/src/build
 workdir /srv/openalpr/src/build
 
 # Setup the compile environment
+run conan install ..
 run cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_INSTALL_SYSCONFDIR:PATH=/etc .. && \
     make -j2 && \
     make install

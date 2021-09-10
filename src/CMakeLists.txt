@@ -77,19 +77,19 @@ ENDIF()
 include_directories(./openalpr )
 
 IF (WIN32)
-	add_definitions( -DWINDOWS)
-	add_definitions( -DNOMINMAX)
+   add_definitions( -DWINDOWS)
+   add_definitions( -DNOMINMAX)
 
-	# Extra linker dependencies for Windows
-	SET (Tesseract_LIBRARIES
-		${Tesseract_LIBRARIES}
-		ws2_32.lib
-	)
+   # Extra linker dependencies for Windows
+   SET (Tesseract_LIBRARIES
+      ${Tesseract_LIBRARIES}
+      ws2_32.lib
+   )
 ELSE()
 
-	SET (Extra_LIBS
-		pthread
-	)
+   SET (Extra_LIBS
+      pthread
+   )
 
 ENDIF()
 
@@ -122,6 +122,7 @@ if (NOT IOS)
     ${OpenCV_LIBS}
     ${Tesseract_LIBRARIES}
     ${Extra_LIBS}
+    ${CONAN_LIBS}
   )
 ENDIF()
 
@@ -137,13 +138,14 @@ IF (WITH_DAEMON)
 
   TARGET_LINK_LIBRARIES(alprd
       ${OPENALPR_LIB}
-	  support
+     support
       video
-	  curl
-	  ${OpenCV_LIBS}
-	  ${Tesseract_LIBRARIES}
-	  ${log4cplus_LIBRARIES}
+     curl
+     ${OpenCV_LIBS}
+     ${Tesseract_LIBRARIES}
+     ${log4cplus_LIBRARIES}
       ${Extra_LIBS}
+      ${CONAN_LIBS}
     )
 
 ENDIF()
