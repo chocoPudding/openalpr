@@ -17,11 +17,11 @@ class LoggingVideoDispatcher : public VideoDispatcher
 
   virtual void log_info(std::string message)
   {
-    LOG4CPLUS_INFO(logger, message);
+    //#aLOG4CPLUS_INFO(logger, message);
   }
   virtual void log_error(std::string error)
   {
-    LOG4CPLUS_WARN(logger, error );
+   // LOG4CPLUS_WARN(logger, error );
   }
 
   private:
