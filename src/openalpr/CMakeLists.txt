@@ -61,6 +61,7 @@ TARGET_LINK_LIBRARIES(openalpr
   ${STATE_DETECTION_LIB}
   ${OpenCV_LIBS}
   ${Tesseract_LIBRARIES}
+  ${CONAN_LIBS}
 )
 
 
