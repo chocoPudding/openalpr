@@ -1,0 +1,19 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.4.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+-   repo: https://gitlab.com/daverona/pre-commit-cpp
+    rev: 0.6.0          # use the most recent version
+    hooks:
+    -   id: cppcheck      # static analyzer of C/C++ code
+-    repo: https://github.com/iconmaster5326/cmake-format-pre-commit-hook
+     rev: master
+     hooks:
+     -   id: cmake-format
+-   repo: git://github.com/doublify/pre-commit-clang-format
+    rev: master
+    hooks:
+    -   id: clang-format
