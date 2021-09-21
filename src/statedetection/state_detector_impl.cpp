@@ -21,56 +21,58 @@
 
 namespace alpr
 {
-  StateDetectorImpl::StateDetectorImpl(const std::string country, const std::string runtimeDir)
-  {
-
+StateDetectorImpl::StateDetectorImpl(const std::string country, const std::string runtimeDir)
+{
 
     if (featureMatcher.isLoaded() == false)
     {
-      std::cout << "Can not create detector or descriptor extractor or descriptor matcher of given types" << std::endl;
-      return;
+        std::cout << "Can not create detector or descriptor extractor or descriptor matcher of given types" << std::endl;
+        return;
     }
 
     featureMatcher.loadRecognitionSet(runtimeDir, country);
-  }
+}
 
-  StateDetectorImpl::~StateDetectorImpl() { }
+StateDetectorImpl::~StateDetectorImpl() { }
 
-  bool StateDetectorImpl::isLoaded() {
+bool StateDetectorImpl::isLoaded()
+{
     return false;
-  }
+}
 
-  void StateDetectorImpl::setTopN(int topN) {
-  }
+void StateDetectorImpl::setTopN(int topN)
+{
+}
 
-  std::vector<StateCandidate> StateDetectorImpl::detect(std::vector<char> imageBytes) {
+std::vector<StateCandidate> StateDetectorImpl::detect(std::vector<char> imageBytes)
+{
     cv::Mat img = cv::imdecode(cv::Mat(imageBytes), 1);
 
     return this->detect(img);
-  }
+}
 
-  std::vector<StateCandidate> StateDetectorImpl::detect(unsigned char *pixelData, int bytesPerPixel, int imgWidth,
-                                                        int imgHeight) {
+std::vector<StateCandidate> StateDetectorImpl::detect(unsigned char* pixelData, int bytesPerPixel, int imgWidth,
+    int imgHeight)
+{
     int arraySize = imgWidth * imgHeight * bytesPerPixel;
     cv::Mat imgData = cv::Mat(arraySize, 1, CV_8U, pixelData);
     cv::Mat img = imgData.reshape(bytesPerPixel, imgHeight);
 
     return this->detect(img);
+}
 
-  }
-
-  std::vector<StateCandidate> StateDetectorImpl::detect(cv::Mat image) {
+std::vector<StateCandidate> StateDetectorImpl::detect(cv::Mat image)
+{
     std::vector<StateCandidate> results;
-
 
     cv::Mat debugImg(image.size(), image.type());
     image.copyTo(debugImg);
     std::vector<int> matchesArray(featureMatcher.numTrainingElements());
 
-    RecognitionResult result = featureMatcher.recognize(image, true, &debugImg, true, matchesArray );
+    RecognitionResult result = featureMatcher.recognize(image, true, &debugImg, true, matchesArray);
 
     if (result.haswinner == false)
-      return results;
+        return results;
 
     StateCandidate top_candidate;
     top_candidate.confidence = result.confidence;
@@ -79,5 +81,5 @@ namespace alpr
     results.push_back(top_candidate);
 
     return results;
-  }
+}
 }

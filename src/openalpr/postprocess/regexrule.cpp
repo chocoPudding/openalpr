@@ -28,118 +28,114 @@ tthread::mutex regexrule_mutex_m;
 
 namespace alpr
 {
-   
-  RegexRule::RegexRule(string region, string pattern, std::string letters_regex, std::string numbers_regex)
-  //: re2_regex("")
-  {   
+
+RegexRule::RegexRule(string region, string pattern, std::string letters_regex, std::string numbers_regex)
+//: re2_regex("")
+{
     this->original = pattern;
     this->region = region;
     this->regex = "";
 
     this->valid = false;
     string::iterator end_it = utf8::find_invalid(pattern.begin(), pattern.end());
-    if (end_it != pattern.end()) {
-      cerr << "Invalid UTF-8 encoding detected " << endl;
-      return;
+    if (end_it != pattern.end())
+    {
+        cerr << "Invalid UTF-8 encoding detected " << endl;
+        return;
     }
-    
+
     std::stringstream regexval;
     string::iterator utf_iterator = pattern.begin();
     numchars = 0;
     while (utf_iterator < pattern.end())
     {
-      int cp = utf8::next(utf_iterator, pattern.end());
-      
-      string utf_character = utf8chr(cp);
-      
-      
-      if (utf_character == "[")
-      {
-        regexval << "[";
-        
-        while (utf_character != "]" )
+        int cp = utf8::next(utf_iterator, pattern.end());
+
+        string utf_character = utf8chr(cp);
+
+        if (utf_character == "[")
         {
-          if (utf_iterator >= pattern.end())
-            break; // Invalid regex, don't bother processing
-          int cp = utf8::next(utf_iterator, pattern.end());
+            regexval << "[";
 
-          utf_character = utf8chr(cp);
-          regexval << utf_character;
+            while (utf_character != "]")
+            {
+                if (utf_iterator >= pattern.end())
+                    break; // Invalid regex, don't bother processing
+                int cp = utf8::next(utf_iterator, pattern.end());
+
+                utf_character = utf8chr(cp);
+                regexval << utf_character;
+            }
         }
-        
-      }
-      else if (utf_character == "\\")
-      {
-        // Don't add "\" characters to our character count
-        regexval << utf_character;
-        continue;
-      }
-      else if (utf_character == "?")
-      {
-        regexval << ".";
-      }
-      else if (utf_character == "@")
-      {
-        regexval << letters_regex;
-      }
-      else if (utf_character == "#")
-      {
-        regexval << numbers_regex;
-      }
-      else if ((utf_character == "*") || (utf_character == "+"))
-      {
-        cerr << "Regex with wildcards (* or +) not supported" << endl;
-      }
-      else
-      {
-        regexval << utf_character;
-      }
+        else if (utf_character == "\\")
+        {
+            // Don't add "\" characters to our character count
+            regexval << utf_character;
+            continue;
+        }
+        else if (utf_character == "?")
+        {
+            regexval << ".";
+        }
+        else if (utf_character == "@")
+        {
+            regexval << letters_regex;
+        }
+        else if (utf_character == "#")
+        {
+            regexval << numbers_regex;
+        }
+        else if ((utf_character == "*") || (utf_character == "+"))
+        {
+            cerr << "Regex with wildcards (* or +) not supported" << endl;
+        }
+        else
+        {
+            regexval << utf_character;
+        }
 
-      numchars++;
+        numchars++;
     }
 
     this->regex = regexval.str();
 
     re2_regex = new re2::RE2(this->regex);
-    
 
-    
-    if (!re2_regex->ok()) {
-      cerr << "Unable to load regex: " << pattern << endl;
+    if (!re2_regex->ok())
+    {
+        cerr << "Unable to load regex: " << pattern << endl;
     }
     else
     {
-      this->valid = true;
+        this->valid = true;
     }
-  }
-  
-  
-  RegexRule::~RegexRule()
-  {
-    delete re2_regex;
-  }
+}
 
-  bool RegexRule::match(string text)
-  {
+RegexRule::~RegexRule()
+{
+    delete re2_regex;
+}
+
+bool RegexRule::match(string text)
+{
     if (!this->valid)
-      return false;
-    
+        return false;
+
     string::iterator end_it = utf8::find_invalid(text.begin(), text.end());
-    if (end_it != text.end()) {
-      cerr << "Invalid UTF-8 encoding detected " << endl;
-      return false;
+    if (end_it != text.end())
+    {
+        cerr << "Invalid UTF-8 encoding detected " << endl;
+        return false;
     }
-   
+
     int text_char_length = utf8::distance(text.begin(), text.end());
 
     if (text_char_length != numchars)
-      return false;
+        return false;
 
     bool match = re2::RE2::FullMatch(text, *re2_regex);
 
     return match;
-  }
-
-
 }
 
+}

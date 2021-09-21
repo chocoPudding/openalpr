@@ -21,47 +21,46 @@
 
 namespace alpr
 {
-  
-  OCR::OCR(Config* config) : postProcessor(config) {
+
+OCR::OCR(Config* config)
+    : postProcessor(config)
+{
     this->config = config;
-  }
+}
 
+OCR::~OCR()
+{
+}
 
-  OCR::~OCR() {
-  }
+void OCR::performOCR(PipelineData* pipeline_data)
+{
 
-  
-  void OCR::performOCR(PipelineData* pipeline_data)
-  {
-    
     timespec startTime;
     getTimeMonotonic(&startTime);
 
     segment(pipeline_data);
-    
-    postProcessor.clear();
 
+    postProcessor.clear();
 
     int absolute_charpos = 0;
     for (unsigned int line_idx = 0; line_idx < pipeline_data->textLines.size(); line_idx++)
     {
-      std::vector<OcrChar> chars = recognize_line(line_idx, pipeline_data);
-      
-      for (uint32_t i = 0; i < chars.size(); i++)
-      {
-        // For multi-line plates, set the character indexes to sequential values based on the line number
-        int line_ordered_index = (line_idx * config->postProcessMaxCharacters) + chars[i].char_index;
-        postProcessor.addLetter(chars[i].letter, line_idx, line_ordered_index, chars[i].confidence);
-        absolute_charpos++;
-      }
+        std::vector<OcrChar> chars = recognize_line(line_idx, pipeline_data);
+
+        for (uint32_t i = 0; i < chars.size(); i++)
+        {
+            // For multi-line plates, set the character indexes to sequential values based on the line number
+            int line_ordered_index = (line_idx * config->postProcessMaxCharacters) + chars[i].char_index;
+            postProcessor.addLetter(chars[i].letter, line_idx, line_ordered_index, chars[i].confidence);
+            absolute_charpos++;
+        }
     }
-    
 
     if (config->debugTiming)
     {
-      timespec endTime;
-      getTimeMonotonic(&endTime);
-      std::cout << "OCR Time: " << diffclock(startTime, endTime) << "ms." << std::endl;
+        timespec endTime;
+        getTimeMonotonic(&endTime);
+        std::cout << "OCR Time: " << diffclock(startTime, endTime) << "ms." << std::endl;
     }
-  }
+}
 }

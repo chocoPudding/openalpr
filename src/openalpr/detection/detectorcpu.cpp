@@ -27,55 +27,49 @@ using namespace std;
 namespace alpr
 {
 
+DetectorCPU::DetectorCPU(Config* config, PreWarp* prewarp)
+    : Detector(config, prewarp)
+{
 
-  DetectorCPU::DetectorCPU(Config* config, PreWarp* prewarp) : Detector(config, prewarp) {
-
-
-    
-    if( this->plate_cascade.load( get_detector_file() ) )
+    if (this->plate_cascade.load(get_detector_file()))
     {
-      this->loaded = true;
+        this->loaded = true;
     }
     else
     {
-      this->loaded = false;
-      printf("--(!)Error loading CPU classifier %s\n", get_detector_file().c_str());
+        this->loaded = false;
+        printf("--(!)Error loading CPU classifier %s\n", get_detector_file().c_str());
     }
-  }
+}
 
+DetectorCPU::~DetectorCPU()
+{
+}
 
-  DetectorCPU::~DetectorCPU() {
-  }
-
-
-
-  
-  vector<Rect> DetectorCPU::find_plates(Mat frame, cv::Size min_plate_size, cv::Size max_plate_size)
-  {
+vector<Rect> DetectorCPU::find_plates(Mat frame, cv::Size min_plate_size, cv::Size max_plate_size)
+{
 
     vector<Rect> plates;
-   
+
     //-- Detect plates
     timespec startTime;
     getTimeMonotonic(&startTime);
 
-    equalizeHist( frame, frame );
-    
-    plate_cascade.detectMultiScale( frame, plates, config->detection_iteration_increase, config->detectionStrictness,
-                                      CASCADE_DO_CANNY_PRUNING,
-                                      //0|CV_HAAR_SCALE_IMAGE,
-                                      min_plate_size, max_plate_size );
+    equalizeHist(frame, frame);
 
+    plate_cascade.detectMultiScale(frame, plates, config->detection_iteration_increase, config->detectionStrictness,
+        CASCADE_DO_CANNY_PRUNING,
+        //0|CV_HAAR_SCALE_IMAGE,
+        min_plate_size, max_plate_size);
 
     if (config->debugTiming)
     {
-      timespec endTime;
-      getTimeMonotonic(&endTime);
-      cout << "LBP Time: " << diffclock(startTime, endTime) << "ms." << endl;
+        timespec endTime;
+        getTimeMonotonic(&endTime);
+        cout << "LBP Time: " << diffclock(startTime, endTime) << "ms." << endl;
     }
 
     return plates;
-
-  }
+}
 
 }

@@ -21,8 +21,9 @@
 
 namespace alpr
 {
-  HistogramHorizontal::HistogramHorizontal(cv::Mat inputImage, cv::Mat mask) {
+HistogramHorizontal::HistogramHorizontal(cv::Mat inputImage, cv::Mat mask)
+{
 
-      analyzeImage(inputImage, mask, false);
-  }
+    analyzeImage(inputImage, mask, false);
+}
 }
