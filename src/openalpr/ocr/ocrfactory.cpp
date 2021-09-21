@@ -3,10 +3,9 @@
 
 namespace alpr
 {
-  OCR* createOcr(Config* config)
-  {
+OCR* createOcr(Config* config)
+{
     return new TesseractOcr(config);
-  }
-
 }
 
+}

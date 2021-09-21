@@ -22,188 +22,204 @@
 using namespace cv;
 using namespace std;
 
-namespace alpr {
+namespace alpr
+{
 
-  DetectorMorph::DetectorMorph(Config* config, PreWarp* prewarp) : Detector(config, prewarp) {
+DetectorMorph::DetectorMorph(Config* config, PreWarp* prewarp)
+    : Detector(config, prewarp)
+{
 
     this->loaded = true;
-  }
+}
 
-  DetectorMorph::~DetectorMorph() {
-  }
+DetectorMorph::~DetectorMorph()
+{
+}
 
-  bool  DetectorMorph::ValidateCharAspect(Rect& r0, float idealAspect) {
-		if ((r0.width < 5 || r0.width > 20)
-			|| (r0.height < 15 || r0.height > 40)) return false;
+bool DetectorMorph::ValidateCharAspect(Rect& r0, float idealAspect)
+{
+    if ((r0.width < 5 || r0.width > 20)
+        || (r0.height < 15 || r0.height > 40))
+        return false;
 
-		float aspectChar = ((float)r0.width / (float)r0.height);
+    float aspectChar = ((float)r0.width / (float)r0.height);
 
-		float deltaChar = fabs(idealAspect - aspectChar);
+    float deltaChar = fabs(idealAspect - aspectChar);
 
-		if (deltaChar < 0.25)
-			return true;
-		else
-			return false;
+    if (deltaChar < 0.25)
+        return true;
+    else
+        return false;
+}
 
-	}
-	
-  std::vector<cv::Rect> DetectorMorph::find_plates(cv::Mat frame_gray, cv::Size min_plate_size, cv::Size max_plate_size)
-  {
+std::vector<cv::Rect> DetectorMorph::find_plates(cv::Mat frame_gray, cv::Size min_plate_size, cv::Size max_plate_size)
+{
 
     Mat frame_gray_cp(frame_gray.size(), frame_gray.type());
     frame_gray.copyTo(frame_gray_cp);
     blur(frame_gray, frame_gray, Size(5, 5));
 
     vector<Rect> plates;
-    
+
     Mat img_open, img_result;
     Mat element = getStructuringElement(MORPH_RECT, Size(30, 4));
     morphologyEx(frame_gray, img_open, MORPH_OPEN, element, cv::Point(-1, -1));
 
     img_result = frame_gray - img_open;
 
-    if (config->debugDetector && config->debugShowImages) {
-      imshow("Opening", img_result);
+    if (config->debugDetector && config->debugShowImages)
+    {
+        imshow("Opening", img_result);
     }
 
     //threshold image using otsu thresholding
     Mat img_threshold, img_open2;
     threshold(img_result, img_threshold, 0, 255, THRESH_OTSU + THRESH_BINARY);
 
-    if (config->debugDetector && config->debugShowImages) {
-      imshow("Threshold Detector", img_threshold);
+    if (config->debugDetector && config->debugShowImages)
+    {
+        imshow("Threshold Detector", img_threshold);
     }
 
     Mat diamond(5, 5, CV_8U, cv::Scalar(1));
 
-      diamond.at<uchar>(0, 0) = 0;
-      diamond.at<uchar>(0, 1) = 0;
-      diamond.at<uchar>(1, 0) = 0;
-      diamond.at<uchar>(4, 4) = 0;
-      diamond.at<uchar>(3, 4) = 0;
-      diamond.at<uchar>(4, 3) = 0;
-      diamond.at<uchar>(4, 0) = 0;
-      diamond.at<uchar>(4, 1) = 0;
-      diamond.at<uchar>(3, 0) = 0;
-      diamond.at<uchar>(0, 4) = 0;
-      diamond.at<uchar>(0, 3) = 0;
-      diamond.at<uchar>(1, 4) = 0;
+    diamond.at<uchar>(0, 0) = 0;
+    diamond.at<uchar>(0, 1) = 0;
+    diamond.at<uchar>(1, 0) = 0;
+    diamond.at<uchar>(4, 4) = 0;
+    diamond.at<uchar>(3, 4) = 0;
+    diamond.at<uchar>(4, 3) = 0;
+    diamond.at<uchar>(4, 0) = 0;
+    diamond.at<uchar>(4, 1) = 0;
+    diamond.at<uchar>(3, 0) = 0;
+    diamond.at<uchar>(0, 4) = 0;
+    diamond.at<uchar>(0, 3) = 0;
+    diamond.at<uchar>(1, 4) = 0;
 
     morphologyEx(img_threshold, img_open2, MORPH_OPEN, diamond, cv::Point(-1, -1));
     Mat rectElement = getStructuringElement(cv::MORPH_RECT, Size(13, 4));
     morphologyEx(img_open2, img_threshold, MORPH_CLOSE, rectElement, cv::Point(-1, -1));
 
-    if (config->debugDetector && config->debugShowImages) {
-      imshow("Close", img_threshold);
-      waitKey(0);
+    if (config->debugDetector && config->debugShowImages)
+    {
+        imshow("Close", img_threshold);
+        waitKey(0);
     }
 
     //Find contours of possibles plates
-    vector< vector< Point> > contours;
+    vector<vector<Point>> contours;
     findContours(img_threshold,
-            contours, // a vector of contours
-            RETR_EXTERNAL, // retrieve the external contours
-            CHAIN_APPROX_NONE); // all pixels of each contours
+        contours, // a vector of contours
+        RETR_EXTERNAL, // retrieve the external contours
+        CHAIN_APPROX_NONE); // all pixels of each contours
 
     //Start to iterate to each contour founded
-    vector<vector<Point> >::iterator itc = contours.begin();
+    vector<vector<Point>>::iterator itc = contours.begin();
     vector<RotatedRect> rects;
 
-    //Remove patch that are no inside limits of aspect ratio and area.    
-    while (itc != contours.end()) {
-      //Create bounding rect of object
-      RotatedRect mr = minAreaRect(Mat(*itc));
+    //Remove patch that are no inside limits of aspect ratio and area.
+    while (itc != contours.end())
+    {
+        //Create bounding rect of object
+        RotatedRect mr = minAreaRect(Mat(*itc));
 
-      if (mr.angle < -45.) {
-                                      mr.angle += 90.0;
-                                      swap(mr.size.width, mr.size.height);
-                              }  
+        if (mr.angle < -45.)
+        {
+            mr.angle += 90.0;
+            swap(mr.size.width, mr.size.height);
+        }
 
-      if (!CheckSizes(mr))
-        itc = contours.erase(itc);
-      else {
-        ++itc;
-                                      rects.push_back(mr);
-      }
+        if (!CheckSizes(mr))
+            itc = contours.erase(itc);
+        else
+        {
+            ++itc;
+            rects.push_back(mr);
+        }
     }
 
-   //Now prunning based on checking all candidate plates for a min/max number of blobsc
+    //Now prunning based on checking all candidate plates for a min/max number of blobsc
     Mat img_crop, img_crop_b, img_crop_th, img_crop_th_inv;
-    vector< vector< Point> > plateBlobs;
-    vector< vector< Point> > plateBlobsInv;
+    vector<vector<Point>> plateBlobs;
+    vector<vector<Point>> plateBlobsInv;
     double thresholds[] = { 10, 40, 80, 120, 160, 200, 240 };
     const int num_thresholds = 7;
     int numValidChars = 0;
     Mat rotated;
-    for (int i = 0; i < rects.size(); i++) {
-      numValidChars = 0;
-      RotatedRect PlateRect = rects[i];
-      Size rect_size = PlateRect.size;
+    for (int i = 0; i < rects.size(); i++)
+    {
+        numValidChars = 0;
+        RotatedRect PlateRect = rects[i];
+        Size rect_size = PlateRect.size;
 
-      // get the rotation matrix
-      Mat M = getRotationMatrix2D(PlateRect.center, PlateRect.angle, 1.0);
-      // perform the affine transformation
-      warpAffine(frame_gray_cp, rotated, M, frame_gray_cp.size(), INTER_CUBIC);
-      //Crop area around candidate plate
-      getRectSubPix(rotated, rect_size, PlateRect.center, img_crop);
+        // get the rotation matrix
+        Mat M = getRotationMatrix2D(PlateRect.center, PlateRect.angle, 1.0);
+        // perform the affine transformation
+        warpAffine(frame_gray_cp, rotated, M, frame_gray_cp.size(), INTER_CUBIC);
+        //Crop area around candidate plate
+        getRectSubPix(rotated, rect_size, PlateRect.center, img_crop);
 
-       if (config->debugDetector && config->debugShowImages) {
-              imshow("Tilt Correction", img_crop);
-              waitKey(0);
-      }
+        if (config->debugDetector && config->debugShowImages)
+        {
+            imshow("Tilt Correction", img_crop);
+            waitKey(0);
+        }
 
-      for (int z = 0; z < num_thresholds; z++) {
+        for (int z = 0; z < num_thresholds; z++)
+        {
 
-              cv::threshold(img_crop, img_crop_th, thresholds[z], 255, cv::THRESH_BINARY);
-              cv::threshold(img_crop, img_crop_th_inv, thresholds[z], 255, cv::THRESH_BINARY_INV);
+            cv::threshold(img_crop, img_crop_th, thresholds[z], 255, cv::THRESH_BINARY);
+            cv::threshold(img_crop, img_crop_th_inv, thresholds[z], 255, cv::THRESH_BINARY_INV);
 
-              findContours(img_crop_th,
-                      plateBlobs, // a vector of contours
-                      RETR_LIST, // retrieve the contour list
-                      CHAIN_APPROX_NONE); // all pixels of each contours
+            findContours(img_crop_th,
+                plateBlobs, // a vector of contours
+                RETR_LIST, // retrieve the contour list
+                CHAIN_APPROX_NONE); // all pixels of each contours
 
-              findContours(img_crop_th_inv,
-                      plateBlobsInv, // a vector of contours
-                      RETR_LIST, // retrieve the contour list
-                      CHAIN_APPROX_NONE); // all pixels of each contours
+            findContours(img_crop_th_inv,
+                plateBlobsInv, // a vector of contours
+                RETR_LIST, // retrieve the contour list
+                CHAIN_APPROX_NONE); // all pixels of each contours
 
-              int numBlobs = plateBlobs.size();
-              int numBlobsInv = plateBlobsInv.size();
+            int numBlobs = plateBlobs.size();
+            int numBlobsInv = plateBlobsInv.size();
 
-              float idealAspect = config->avgCharWidthMM / config->avgCharHeightMM;
-              for (int j = 0; j < numBlobs; j++) {
-                      cv::Rect r0 = cv::boundingRect(cv::Mat(plateBlobs[j]));
+            float idealAspect = config->avgCharWidthMM / config->avgCharHeightMM;
+            for (int j = 0; j < numBlobs; j++)
+            {
+                cv::Rect r0 = cv::boundingRect(cv::Mat(plateBlobs[j]));
 
-                      if (ValidateCharAspect(r0, idealAspect))
-                              numValidChars++;
-              }
+                if (ValidateCharAspect(r0, idealAspect))
+                    numValidChars++;
+            }
 
-              for (int j = 0; j < numBlobsInv; j++) {
-                      cv::Rect r0 = cv::boundingRect(cv::Mat(plateBlobsInv[j]));
-                      if (ValidateCharAspect(r0, idealAspect))
-                              numValidChars++;
-              }
+            for (int j = 0; j < numBlobsInv; j++)
+            {
+                cv::Rect r0 = cv::boundingRect(cv::Mat(plateBlobsInv[j]));
+                if (ValidateCharAspect(r0, idealAspect))
+                    numValidChars++;
+            }
+        }
+        //If too much or too lcittle might not be a true plate
+        //if (numBlobs < 3 || numBlobs > 50) continue;
+        if (numValidChars < 4 || numValidChars > 50)
+            continue;
 
-      }
-      //If too much or too lcittle might not be a true plate
-      //if (numBlobs < 3 || numBlobs > 50) continue;
-      if (numValidChars < 4  || numValidChars > 50) continue;
+        PlateRegion PlateReg;
 
-      PlateRegion PlateReg;
+        // Ensure that the rectangle isn't < 0 or > maxWidth/Height
+        Rect bounding_rect = PlateRect.boundingRect();
 
-      // Ensure that the rectangle isn't < 0 or > maxWidth/Height
-      Rect bounding_rect = PlateRect.boundingRect();
-      
-      Rect rect_expanded = expandRect(bounding_rect, 0, 0, frame_gray.cols, frame_gray.rows);
+        Rect rect_expanded = expandRect(bounding_rect, 0, 0, frame_gray.cols, frame_gray.rows);
 
-      plates.push_back(rect_expanded);
-
+        plates.push_back(rect_expanded);
     }
-    
-    return plates;
-  }
 
-  bool DetectorMorph::CheckSizes(RotatedRect& mr) {
+    return plates;
+}
+
+bool DetectorMorph::CheckSizes(RotatedRect& mr)
+{
 
     float error = 1.2;
 
@@ -216,17 +232,14 @@ namespace alpr {
     float rmax = 7.0;
 
     int area = mr.size.height * mr.size.width;
-    float r = (float) mr.size.width / (float) mr.size.height;
+    float r = (float)mr.size.width / (float)mr.size.height;
     if (r < 1)
-      r = (float) mr.size.height / (float) mr.size.width;
+        r = (float)mr.size.height / (float)mr.size.width;
 
-    if ( (area < min || area > max) || (r < rmin || r > rmax) ||
-            (mr.size.width < 70 || mr.size.width > 300) || (mr.size.height < 10 || mr.size.height > 80) )
-      return false;
+    if ((area < min || area > max) || (r < rmin || r > rmax) || (mr.size.width < 70 || mr.size.width > 300) || (mr.size.height < 10 || mr.size.height > 80))
+        return false;
     else
-      return true;
-
-  }
-
+        return true;
+}
 
 }

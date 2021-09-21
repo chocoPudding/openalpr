@@ -29,140 +29,138 @@ using namespace tesseract;
 namespace alpr
 {
 
-  TesseractOcr::TesseractOcr(Config* config)
-  : OCR(config)
-  {
+TesseractOcr::TesseractOcr(Config* config)
+    : OCR(config)
+{
     const string MINIMUM_TESSERACT_VERSION = "3.03";
 
     this->postProcessor.setConfidenceThreshold(config->postProcessMinConfidence, config->postProcessConfidenceSkipLevel);
-    
+
     if (cmpVersion(tesseract.Version(), MINIMUM_TESSERACT_VERSION.c_str()) < 0)
     {
-      std::cerr << "Warning: You are running an unsupported version of Tesseract." << endl;
-      std::cerr << "Expecting at least " << MINIMUM_TESSERACT_VERSION << ", your version is: " << tesseract.Version() << endl;
+        std::cerr << "Warning: You are running an unsupported version of Tesseract." << endl;
+        std::cerr << "Expecting at least " << MINIMUM_TESSERACT_VERSION << ", your version is: " << tesseract.Version() << endl;
     }
 
     string TessdataPrefix = config->getTessdataPrefix();
     if (cmpVersion(tesseract.Version(), "4.0.0") >= 0)
-      TessdataPrefix += "tessdata/";    
+        TessdataPrefix += "tessdata/";
 
     // Tesseract requires the prefix directory to be set as an env variable
-    tesseract.Init(TessdataPrefix.c_str(), config->ocrLanguage.c_str() 	);
+    tesseract.Init(TessdataPrefix.c_str(), config->ocrLanguage.c_str());
     tesseract.SetVariable("save_blob_choices", "T");
     tesseract.SetVariable("debug_file", "/dev/null");
     tesseract.SetPageSegMode(PSM_SINGLE_CHAR);
-  }
+}
 
-  TesseractOcr::~TesseractOcr()
-  {
+TesseractOcr::~TesseractOcr()
+{
     tesseract.End();
-  }
-  
-  std::vector<OcrChar> TesseractOcr::recognize_line(int line_idx, PipelineData* pipeline_data) {
+}
+
+std::vector<OcrChar> TesseractOcr::recognize_line(int line_idx, PipelineData* pipeline_data)
+{
 
     const int SPACE_CHAR_CODE = 32;
-    
+
     std::vector<OcrChar> recognized_chars;
-    
+
     for (unsigned int i = 0; i < pipeline_data->thresholds.size(); i++)
     {
-      // Make it black text on white background
-      bitwise_not(pipeline_data->thresholds[i], pipeline_data->thresholds[i]);
-      tesseract.SetImage((uchar*) pipeline_data->thresholds[i].data, 
-                          pipeline_data->thresholds[i].size().width, pipeline_data->thresholds[i].size().height, 
-                          pipeline_data->thresholds[i].channels(), pipeline_data->thresholds[i].step1());
+        // Make it black text on white background
+        bitwise_not(pipeline_data->thresholds[i], pipeline_data->thresholds[i]);
+        tesseract.SetImage((uchar*)pipeline_data->thresholds[i].data,
+            pipeline_data->thresholds[i].size().width, pipeline_data->thresholds[i].size().height,
+            pipeline_data->thresholds[i].channels(), pipeline_data->thresholds[i].step1());
 
- 
-      int absolute_charpos = 0;
+        int absolute_charpos = 0;
 
-      for (unsigned int j = 0; j < pipeline_data->charRegions[line_idx].size(); j++)
-      {
-        Rect expandedRegion = expandRect( pipeline_data->charRegions[line_idx][j], 2, 2, pipeline_data->thresholds[i].cols, pipeline_data->thresholds[i].rows) ;
-
-        tesseract.SetRectangle(expandedRegion.x, expandedRegion.y, expandedRegion.width, expandedRegion.height);
-        tesseract.Recognize(NULL);
-
-        tesseract::ResultIterator* ri = tesseract.GetIterator();
-        tesseract::PageIteratorLevel level = tesseract::RIL_SYMBOL;
-        do
+        for (unsigned int j = 0; j < pipeline_data->charRegions[line_idx].size(); j++)
         {
-          if (ri->Empty(level)) continue;
-          
-          const char* symbol = ri->GetUTF8Text(level);
-          float conf = ri->Confidence(level);
+            Rect expandedRegion = expandRect(pipeline_data->charRegions[line_idx][j], 2, 2, pipeline_data->thresholds[i].cols, pipeline_data->thresholds[i].rows);
 
-          bool dontcare;
-          int fontindex = 0;
-          int pointsize = 0;
-          const char* fontName = ri->WordFontAttributes(&dontcare, &dontcare, &dontcare, &dontcare, &dontcare, &dontcare, &pointsize, &fontindex);
+            tesseract.SetRectangle(expandedRegion.x, expandedRegion.y, expandedRegion.width, expandedRegion.height);
+            tesseract.Recognize(NULL);
 
-          // Ignore NULL pointers, spaces, and characters that are way too small to be valid
-          if(symbol != 0 && symbol[0] != SPACE_CHAR_CODE && pointsize >= config->ocrMinFontSize)
-          {
-            OcrChar c;
-            c.char_index = absolute_charpos;
-            c.confidence = conf;
-            c.letter = string(symbol);
-            recognized_chars.push_back(c);
-
-            if (this->config->debugOcr)
-              printf("charpos%d line%d: threshold %d:  symbol %s, conf: %f font: %s (index %d) size %dpx", absolute_charpos, line_idx, i, symbol, conf, fontName, fontindex, pointsize);
-
-            bool indent = false;
-            tesseract::ChoiceIterator ci(*ri);
+            tesseract::ResultIterator* ri = tesseract.GetIterator();
+            tesseract::PageIteratorLevel level = tesseract::RIL_SYMBOL;
             do
             {
-              const char* choice = ci.GetUTF8Text();
-              
-              OcrChar c2;
-              c2.char_index = absolute_charpos;
-              c2.confidence = ci.Confidence();
-              c2.letter = string(choice);
-              
-              //1/17/2016 adt adding check to avoid double adding same character if ci is same as symbol. Otherwise first choice from ResultsIterator will get added twice when choiceIterator run.
-              if (string(symbol) != string(choice))
-                recognized_chars.push_back(c2);
-              else
-              {
-                // Explictly double-adding the first character.  This leads to higher accuracy right now, likely because other sections of code
-                // have expected it and compensated. 
-                // TODO: Figure out how to remove this double-counting of the first letter without impacting accuracy
-                recognized_chars.push_back(c2);
-              }
-              if (this->config->debugOcr)
-              {
-                if (indent) printf("\t\t ");
-                printf("\t- ");
-                printf("%s conf: %f\n", choice, ci.Confidence());
-              }
+                if (ri->Empty(level))
+                    continue;
 
-              indent = true;
-            }
-            while(ci.Next());
+                const char* symbol = ri->GetUTF8Text(level);
+                float conf = ri->Confidence(level);
 
-          }
+                bool dontcare;
+                int fontindex = 0;
+                int pointsize = 0;
+                const char* fontName = ri->WordFontAttributes(&dontcare, &dontcare, &dontcare, &dontcare, &dontcare, &dontcare, &pointsize, &fontindex);
 
-          if (this->config->debugOcr)
-            printf("---------------------------------------------\n");
+                // Ignore NULL pointers, spaces, and characters that are way too small to be valid
+                if (symbol != 0 && symbol[0] != SPACE_CHAR_CODE && pointsize >= config->ocrMinFontSize)
+                {
+                    OcrChar c;
+                    c.char_index = absolute_charpos;
+                    c.confidence = conf;
+                    c.letter = string(symbol);
+                    recognized_chars.push_back(c);
 
-          delete[] symbol;
+                    if (this->config->debugOcr)
+                        printf("charpos%d line%d: threshold %d:  symbol %s, conf: %f font: %s (index %d) size %dpx", absolute_charpos, line_idx, i, symbol, conf, fontName, fontindex, pointsize);
+
+                    bool indent = false;
+                    tesseract::ChoiceIterator ci(*ri);
+                    do
+                    {
+                        const char* choice = ci.GetUTF8Text();
+
+                        OcrChar c2;
+                        c2.char_index = absolute_charpos;
+                        c2.confidence = ci.Confidence();
+                        c2.letter = string(choice);
+
+                        //1/17/2016 adt adding check to avoid double adding same character if ci is same as symbol. Otherwise first choice from ResultsIterator will get added twice when choiceIterator run.
+                        if (string(symbol) != string(choice))
+                            recognized_chars.push_back(c2);
+                        else
+                        {
+                            // Explictly double-adding the first character.  This leads to higher accuracy right now, likely because other sections of code
+                            // have expected it and compensated.
+                            // TODO: Figure out how to remove this double-counting of the first letter without impacting accuracy
+                            recognized_chars.push_back(c2);
+                        }
+                        if (this->config->debugOcr)
+                        {
+                            if (indent)
+                                printf("\t\t ");
+                            printf("\t- ");
+                            printf("%s conf: %f\n", choice, ci.Confidence());
+                        }
+
+                        indent = true;
+                    } while (ci.Next());
+                }
+
+                if (this->config->debugOcr)
+                    printf("---------------------------------------------\n");
+
+                delete[] symbol;
+            } while ((ri->Next(level)));
+
+            delete ri;
+
+            absolute_charpos++;
         }
-        while((ri->Next(level)));
-
-        delete ri;
-
-        absolute_charpos++;
-      }
-      
     }
-    
+
     return recognized_chars;
-  }
-  void TesseractOcr::segment(PipelineData* pipeline_data) {
+}
+void TesseractOcr::segment(PipelineData* pipeline_data)
+{
 
     CharacterSegmenter segmenter(pipeline_data);
     segmenter.segment();
-  }
-
+}
 
 }

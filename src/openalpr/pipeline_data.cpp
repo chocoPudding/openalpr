@@ -6,42 +6,43 @@ using namespace std;
 namespace alpr
 {
 
-  PipelineData::PipelineData(Mat colorImage, Rect regionOfInterest, Config* config)
-  {
+PipelineData::PipelineData(Mat colorImage, Rect regionOfInterest, Config* config)
+{
     Mat grayImage;
 
     if (colorImage.channels() > 2)
     {
-      cvtColor(colorImage, grayImage, COLOR_BGR2GRAY);
+        cvtColor(colorImage, grayImage, COLOR_BGR2GRAY);
     }
     else
     {
-      grayImage = colorImage;
+        grayImage = colorImage;
     }
 
     this->init(colorImage, grayImage, regionOfInterest, config);
-  }
-  
-  PipelineData::PipelineData(Mat colorImage, Mat grayImg, Rect regionOfInterest, Config* config)
-  {
+}
+
+PipelineData::PipelineData(Mat colorImage, Mat grayImg, Rect regionOfInterest, Config* config)
+{
     this->init(colorImage, grayImg, regionOfInterest, config);
-  }
+}
 
-  PipelineData::~PipelineData()
-  {
+PipelineData::~PipelineData()
+{
     clearThresholds();
-  }
+}
 
-  void PipelineData::clearThresholds()
-  {
+void PipelineData::clearThresholds()
+{
     for (unsigned int i = 0; i < thresholds.size(); i++)
     {
-      thresholds[i].release();
+        thresholds[i].release();
     }
     thresholds.clear();
-  }
+}
 
-  void PipelineData::init(cv::Mat colorImage, cv::Mat grayImage, cv::Rect regionOfInterest, Config *config) {
+void PipelineData::init(cv::Mat colorImage, cv::Mat grayImage, cv::Rect regionOfInterest, Config* config)
+{
     this->colorImg = colorImage;
     this->grayImg = grayImage;
     this->regionOfInterest = regionOfInterest;
@@ -50,5 +51,5 @@ namespace alpr
     this->plate_inverted = false;
     this->disqualified = false;
     this->disqualify_reason = "";
-  }
+}
 }

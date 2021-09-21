@@ -7,20 +7,22 @@
 #include "re2/util/valgrind.h"
 #endif
 
-namespace re2 {
+namespace re2
+{
 
 #ifndef __has_feature
 #define __has_feature(x) 0
 #endif
 
-int RunningOnValgrind() {
+int RunningOnValgrind()
+{
 #if __has_feature(memory_sanitizer)
-	return true;
+    return true;
 #elif defined(RUNNING_ON_VALGRIND)
-	return RUNNING_ON_VALGRIND;
+    return RUNNING_ON_VALGRIND;
 #else
-	return 0;
+    return 0;
 #endif
 }
 
-}  // namespace re2
+} // namespace re2

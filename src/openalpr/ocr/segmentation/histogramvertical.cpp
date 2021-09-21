@@ -25,13 +25,9 @@ using namespace std;
 namespace alpr
 {
 
-  HistogramVertical::HistogramVertical(Mat inputImage, Mat mask)
-  {
+HistogramVertical::HistogramVertical(Mat inputImage, Mat mask)
+{
     analyzeImage(inputImage, mask, true);
-  }
-
-
-
-
+}
 
 }

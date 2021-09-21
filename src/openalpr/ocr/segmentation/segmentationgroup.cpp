@@ -22,33 +22,31 @@
 namespace alpr
 {
 
-  SegmentationGroup::SegmentationGroup()
-  {
+SegmentationGroup::SegmentationGroup()
+{
+}
 
-  }
+SegmentationGroup::~SegmentationGroup()
+{
+}
 
-  SegmentationGroup::~SegmentationGroup()
-  {
-
-  }
-
-  void SegmentationGroup::add(int segmentID)
-  {
+void SegmentationGroup::add(int segmentID)
+{
     this->segmentIDs.push_back(segmentID);
-  }
+}
 
-  bool SegmentationGroup::equals(SegmentationGroup otherGroup)
-  {
+bool SegmentationGroup::equals(SegmentationGroup otherGroup)
+{
     if (segmentIDs.size() != otherGroup.segmentIDs.size())
-      return false;
+        return false;
 
     for (int i = 0; i < segmentIDs.size(); i++)
     {
-      if (otherGroup.segmentIDs[i] != segmentIDs[i])
-        return false;
+        if (otherGroup.segmentIDs[i] != segmentIDs[i])
+            return false;
     }
 
     return true;
-  }
-  
+}
+
 }

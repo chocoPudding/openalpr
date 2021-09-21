@@ -22,31 +22,38 @@
 
 using namespace std;
 
-namespace alpr {
+namespace alpr
+{
 
-  StateDetector::StateDetector(const std::string country, const std::string configFile, const std::string runtimeDir)  {
+StateDetector::StateDetector(const std::string country, const std::string configFile, const std::string runtimeDir)
+{
     impl = new StateDetectorImpl(country, runtimeDir);
-  }
+}
 
-  StateDetector::~StateDetector() {
+StateDetector::~StateDetector()
+{
     delete impl;
-  }
+}
 
-  bool StateDetector::isLoaded() {
+bool StateDetector::isLoaded()
+{
     return impl->isLoaded();
-  }
+}
 
-  void StateDetector::setTopN(int topN) {
+void StateDetector::setTopN(int topN)
+{
     impl->setTopN(topN);
-  }
+}
 
-  vector<StateCandidate> StateDetector::detect(vector<char> imageBytes) {
+vector<StateCandidate> StateDetector::detect(vector<char> imageBytes)
+{
     return impl->detect(imageBytes);
-  }
+}
 
-  vector<StateCandidate> StateDetector::detect(unsigned char *pixelData, int bytesPerPixel, int imgWidth,
-                                                    int imgHeight) {
+vector<StateCandidate> StateDetector::detect(unsigned char* pixelData, int bytesPerPixel, int imgWidth,
+    int imgHeight)
+{
     return impl->detect(pixelData, bytesPerPixel, imgWidth, imgHeight);
-  }
+}
 
 }
