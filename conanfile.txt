@@ -1,7 +1,7 @@
 [requires]
 tesseract/4.1.1
 opencv/3.4.12
-curl/latest
+libcurl/7.79.1
 
 [generators]
 cmake

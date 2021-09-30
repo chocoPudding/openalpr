@@ -49,5 +49,8 @@ Release/
 # JetBrains IDEA / PyCharm
 .idea/
 
+#conan default profile
+conan/
+
 
 cmake_install.cmake
