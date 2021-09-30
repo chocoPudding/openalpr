@@ -1,0 +1,38 @@
+FROM ubuntu:21.04
+ARG UID=1000
+ARG GID=1000
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    build-essential \
+    cmake \
+    curl \
+    git \
+    libcurl3-dev \
+    libleptonica-dev \
+    liblog4cplus-dev \
+    libopencv-dev \
+    libtesseract-dev \
+    wget \
+    libgtk2.0-dev \
+    python3-pip \
+    unzip \
+    clangd \
+    clang \
+    libtool \
+    libtool-bin \
+    sudo -y
+
+RUN python3 -m pip install conan pre-commit
+
+RUN git clone https://github.com/neovim/neovim.git -b release-0.5 && \
+    cd neovim && \
+    make CMAKE_BUILD_TYPE=RelWithDebInfo && \
+    make install && \
+    cd .. && \
+    rm -r neovim
+
+RUN useradd -m -u $UID -s /bin/bash -G sudo dev
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+WORKDIR /srv/workdir/
+
+ENTRYPOINT ["/bin/bash"]
